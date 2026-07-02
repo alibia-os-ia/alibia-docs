@@ -230,3 +230,39 @@ NestJS App
 ├── ConfigModule (isGlobal) → variables d'env validées
 ├── PrismaModule (isGlobal) → connexion PostgreSQL
 └── PostgreSQL (Docker) → port 5432, données persistantes
+
+# Étape 06 — Swagger
+
+## Objectif
+
+Mettre en place la documentation interactive de l'API.
+
+## Commandes exécutées
+
+```bash
+npm install @nestjs/swagger swagger-ui-express
+npx prettier --write "src/**/*.ts"
+```
+
+## Fichiers créés
+
+- `src/health/health.controller.ts` → endpoint GET /health
+- `src/health/health.module.ts` → module Health
+
+## Fichiers modifiés
+
+- `src/main.ts` → Swagger + global prefix api/v1
+- `src/app.module.ts` → import HealthModule
+
+## URLs disponibles
+
+| URL              | Description           |
+| ---------------- | --------------------- |
+| `/docs`          | Swagger UI interactif |
+| `/api/v1/health` | Statut de l'API       |
+
+## Bonnes pratiques
+
+- `persistAuthorization: true` → JWT reste après refresh
+- `addTag` par module → endpoints groupés proprement
+- Health check → standard dans toute startup
