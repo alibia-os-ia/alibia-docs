@@ -206,3 +206,59 @@ POST /auth/logout    [protégé JwtAuthGuard] → refreshToken = null en DB
 - Un seul quote/scope de responsabilité par service (`AuthService` orchestre, `OtpService` et `MailerService` sont des briques dédiées)
 - Tokens courts pour l'access (`15m`), plus longs pour le refresh (`7d`) — équilibre sécurité/UX
 - Tests unitaires écrits en français comme le reste de la codebase, pour cohérence avec l'équipe
+
+Message d'erreur intégré dans le système i18n `AuthMessageKey`
+→ clé `PASSWORD_TOO_WEAK` disponible en FR et EN.
+
+## Décisions d'architecture
+
+- **Throttler en garde globale** via `APP_GUARD` → s'applique
+  automatiquement à toutes les routes présentes et futures,
+  sans avoir à y penser module par module.
+- **Account lockout en DB** (pas en mémoire/Redis) → survit
+  aux redémarrages du serveur, cohérent en environnement
+  multi-instance.
+- **Lockout reset sur resetPassword()** → un user légitime
+  qui a oublié son mot de passe peut toujours récupérer
+  son accès sans contacter le support.
+- **`PASSWORD_TOO_WEAK` dans `AuthMessageKey`** → cohérence
+  totale avec le système i18n existant, le frontend reçoit
+  une `messageKey` et traduit lui-même.
+- **Helmet avant tout** dans `main.ts` → les headers de
+  sécurité s'appliquent à toutes les réponses y compris
+  les erreurs 400/401/500.
+
+## Schéma Prisma — champs ajoutés
+
+```prisma
+model User {
+  // ...
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+}
+
+model OtpCode {
+  // ...
+  attempts Int @default(0)
+}
+```
+
+## Erreurs rencontrées et solutions
+
+| Erreur                                                | Cause                                          | Solution                                                          |
+| ----------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
+| `PASSWORD_MESSAGE` introuvable                        | Export supprimé lors du refactor i18n          | Remplacé par `AUTH_MESSAGES_FR[AuthMessageKey.PASSWORD_TOO_WEAK]` |
+| `symbol` non assignable à `string` dans le décorateur | `PropertyDecorator` accepte `string \| symbol` | `.toString()` sur `propertyName`                                  |
+| Échappements inutiles `\[` `\/` dans regex            | ESLint `no-useless-escape`                     | Simplifiés en `[` et `/`                                          |
+| `failedLoginAttempts` non reconnu par TypeScript      | Prisma Client pas régénéré                     | `npx prisma generate` après migration                             |
+
+## Point 6 — Rotation du Refresh Token
+
+Non implémenté dans cette étape — reporté avant le lancement
+en production. Priorité basse en phase de développement solo.
+
+À implémenter : endpoint `POST /auth/refresh` qui consomme
+le refresh token (rotation complète), génère une nouvelle
+paire access + refresh, et invalide l'ancien immédiatement.
+Permet de détecter le vol de token par détection de conflit
+(double utilisation du même refresh token).
