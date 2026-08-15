@@ -1,7 +1,7 @@
 # Alibia API
 
-Documentation officielle d’Alibia, SaaS de gestion de commerce.  
-Centralise guides, architecture, API et bonnes pratiques.  
+Documentation officielle d'Alibia, SaaS de gestion de commerce.
+Centralise guides, architecture, API et bonnes pratiques.
 Aide développeurs et utilisateurs à comprendre et utiliser le système Alibia (web, mobile, API) avec une vision scalable et IA.
 
 **Stack :** NestJS 11 · TypeScript strict · Prisma 6 · PostgreSQL · JWT/Passport · class-validator · Jest/Supertest
@@ -35,7 +35,7 @@ npm run start:dev
 ## Fichiers générés
 
 | Fichier                 | Rôle                            |
-| ----------------------- | ------------------------------- |
+| ----------------------- | -------------------------------- |
 | `src/main.ts`           | Point d'entrée de l'application |
 | `src/app.module.ts`     | Module racine — orchestre tout  |
 | `src/app.controller.ts` | Reçoit les requêtes HTTP        |
@@ -55,7 +55,7 @@ main.ts
 
 ## Décision d'architecture
 
-Stratégie multi-tenant choisie : **Row-Level Tenancy**  
+Stratégie multi-tenant choisie : **Row-Level Tenancy**
 Chaque table contiendra une colonne `businessId` qui filtre automatiquement les données par entreprise.
 
 ## Bonnes pratiques appliquées
@@ -133,7 +133,7 @@ npm install @nestjs/throttler
 ## Fichiers créés / importants
 
 | Fichier                                       | Rôle                                                        |
-| --------------------------------------------- | ----------------------------------------------------------- |
+| ---------------------------------------------- | ------------------------------------------------------------ |
 | `src/modules/auth/auth.module.ts`             | Module Auth — JwtModule + PassportModule + Throttler        |
 | `src/modules/auth/auth.controller.ts`         | Toutes les routes Auth                                      |
 | `src/modules/auth/auth.service.ts`            | Logique métier complète                                     |
@@ -142,9 +142,9 @@ npm install @nestjs/throttler
 | `src/modules/auth/guards/jwt-auth.guard.ts`   | Guard de protection des routes                              |
 | `src/modules/auth/dto/*.ts`                   | DTOs validés (register, login, verify-otp, refresh, reset…) |
 | `src/modules/auth/constants/auth-messages.ts` | i18n FR/EN + `messageKey`                                   |
-| `src/modules/mailer/*`                        | Envoi d’emails OTP                                          |
-| `src/common/filters/all-exceptions.filter.ts` | Filtre global d’erreurs (Prisma assaini)                    |
-| `src/common/validators/password.validator.ts` | Validateur de mot de passe fort                             |
+| `src/modules/mailer/*`                        | Envoi d'emails OTP                                           |
+| `src/common/filters/all-exceptions.filter.ts` | Filtre global d'erreurs (Prisma assaini)                     |
+| `src/common/validators/password.validator.ts` | Validateur de mot de passe fort                              |
 | `src/tests/e2e/*.e2e-spec.ts`                 | 13 fichiers E2E isolés (rate-limit safe)                    |
 
 ## Architecture du flow d'authentification
@@ -170,7 +170,7 @@ POST /auth/verify-2fa            (@HttpCode 200)
 
 POST /auth/refresh               (@HttpCode 200)
   → rotation complète du refresh token
-  → invalide l’ancien (détection de vol possible)
+  → invalide l'ancien (détection de vol possible)
 
 POST /auth/forgot-password       (@HttpCode 200)
   → anti-énumération (même message si email inconnu)
@@ -199,9 +199,9 @@ GET  /auth/me                    [JWT]
 
 ## Bug critique découvert et corrigé
 
-Le rate limiting **par route** était configuré depuis le début mais **totalement inactif**.  
-Cause : `ThrottlerModule.forRoot({ name: 'global' })` ne matchait pas les décorateurs `@Throttle({ default: {...} })`.  
-Seul le quota global (20 req/min toutes routes confondues) s’appliquait.  
+Le rate limiting **par route** était configuré depuis le début mais **totalement inactif**.
+Cause : `ThrottlerModule.forRoot({ name: 'global' })` ne matchait pas les décorateurs `@Throttle({ default: {...} })`.
+Seul le quota global (20 req/min toutes routes confondues) s'appliquait.
 Corrigé en renommant le throttler en `'default'`.
 
 ## Schéma Prisma — champs de sécurité
@@ -227,7 +227,7 @@ model OtpCode {
 ## Tests (état final)
 
 | Type               | Suites | Tests | Statut |
-| ------------------ | ------ | ----- | ------ |
+| ------------------- | ------ | ----- | ------ |
 | Unitaires          | 2      | 22    | ✅     |
 | E2E                | 13     | 40    | ✅     |
 | `npm run lint`     | —      | —     | ✅     |
@@ -246,7 +246,7 @@ model OtpCode {
 - Routes protégées (`/me`, `/logout`)
 - `/health`
 
-Chaque fichier E2E crée sa **propre instance d’application** pour isoler le rate limiting.
+Chaque fichier E2E crée sa **propre instance d'application** pour isoler le rate limiting.
 
 ## Environnement de test isolé
 
@@ -260,25 +260,25 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
 - `@HttpCode(200)` explicite sur toutes les routes POST qui retournent des tokens ou des messages (évite le 201 par défaut de Nest)
 - Un seul niveau de responsabilité par service
 - Access token court (15m) / Refresh token long (7d)
-- Tests écrits en français pour cohérence avec l’équipe
+- Tests écrits en français pour cohérence avec l'équipe
 - `messageKey` stable pour le frontend (i18n côté client possible)
 
 ## Erreurs rencontrées et solutions (extraits)
 
 | Erreur                          | Cause                                  | Solution                                                    |
-| ------------------------------- | -------------------------------------- | ----------------------------------------------------------- |
+| --------------------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
 | Rate limiting par route inactif | Nom du throttler `global` ≠ `default`  | Renommé en `default`                                        |
 | Routes POST renvoient 201       | Pas de `@HttpCode(200)`                | Ajouté sur login, verify-\*, refresh, forgot, reset, logout |
 | `expiresIn` type incompatible   | `string` vs `StringValue` (ms)         | Cast `as StringValue`                                       |
 | Validation absente              | `ValidationPipe` manquant              | Ajouté globalement (whitelist + forbidNonWhitelisted)       |
-| `NODE_ENV=test` rejeté          | Joi trop strict                        | Ajout de `'test'` dans l’enum                               |
-| Énumération d’emails            | `forgot-password` révélait l’existence | Message unique anti-énumération                             |
+| `NODE_ENV=test` rejeté          | Joi trop strict                        | Ajout de `'test'` dans l'enum                               |
+| Énumération d'emails            | `forgot-password` révélait l'existence | Message unique anti-énumération                             |
 
 ---
 
 ## Liste complète des routes Auth
 
-**Préfixe global :** `/api/v1`  
+**Préfixe global :** `/api/v1`
 **Base URL exemple :** `http://localhost:3000/api/v1`
 
 ### `POST /auth/register`
@@ -438,16 +438,16 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
 
 ### `GET /health`
 
-- **Réponse :** statut de l’API
+- **Réponse :** statut de l'API
 
 ---
 
-## Format Postman (prêt à l’emploi)
+## Format Postman (prêt à l'emploi)
 
-### Variables d’environnement recommandées
+### Variables d'environnement recommandées
 
 | Variable        | Valeur initiale                | Description                 |
-| --------------- | ------------------------------ | --------------------------- |
+| ----------------- | --------------------------------- | ------------------------------ |
 | `BASE_URL`      | `http://localhost:3000/api/v1` | Préfixe API                 |
 | `ACCESS_TOKEN`  | _(vide)_                       | Rempli après login / verify |
 | `REFRESH_TOKEN` | _(vide)_                       | Rempli après login / verify |
@@ -457,7 +457,7 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
 ### Collection minimale (ordre logique)
 
 1. **Register** → `POST {{BASE_URL}}/auth/register`
-2. **Verify Email** → `POST {{BASE_URL}}/auth/verify-email`  
+2. **Verify Email** → `POST {{BASE_URL}}/auth/verify-email`
    → dans le script de test Postman :
    ```js
    if (pm.response.code === 200) {
@@ -467,11 +467,11 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
    }
    ```
 3. **Login** → `POST {{BASE_URL}}/auth/login` (même script de récupération des tokens)
-4. **Refresh** → `POST {{BASE_URL}}/auth/refresh`  
+4. **Refresh** → `POST {{BASE_URL}}/auth/refresh`
    Body : `{ "refreshToken": "{{REFRESH_TOKEN}}" }`
-5. **Me** → `GET {{BASE_URL}}/auth/me`  
+5. **Me** → `GET {{BASE_URL}}/auth/me`
    Header : `Authorization: Bearer {{ACCESS_TOKEN}}`
-6. **Logout** → `POST {{BASE_URL}}/auth/logout`  
+6. **Logout** → `POST {{BASE_URL}}/auth/logout`
    Header : `Authorization: Bearer {{ACCESS_TOKEN}}`
 7. **Forgot Password** / **Reset Password** / **Verify 2FA** / **Toggle 2FA**
 
@@ -479,8 +479,8 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
 
 ## État actuel de la mission « Sécurisation MVP »
 
-| Point                                                             | Statut                            |
-| ----------------------------------------------------------------- | --------------------------------- |
+| Point                                                              | Statut                            |
+| --------------------------------------------------------------------- | ------------------------------------ |
 | Audit initial                                                     | ✅                                |
 | Mots de passe & données sensibles                                 | ✅                                |
 | JWT (access + refresh + rotation)                                 | ✅                                |
@@ -492,8 +492,344 @@ Chaque fichier E2E crée sa **propre instance d’application** pour isoler le r
 | Build / Lint / Tests finaux                                       | ✅                                |
 | Rapport final                                                     | ✅                                |
 
-**L’API Auth est prête pour un MVP sécurisé.**
+**L'API Auth est prête pour un MVP sécurisé.**
 
+---
+
+# Étape 08 — Module Business : gestion des membres (rôles, invitations, listing)
+
+## Objectif
+
+Construire le système de gestion d'équipe multi-tenant sur `feature/business-module` :
+lecture/modification du business courant, système d'invitation de membres par
+token à usage unique (email), et listing unifié des membres actifs/inactifs/invités
+avec filtre et recherche.
+
+## Commandes exécutées
+
+```bash
+npx prisma migrate dev --name add_invitations
+npx prisma migrate dev --name add_business_member_is_active
 ```
 
+## Fichiers créés / importants
+
+| Fichier                                                     | Rôle                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `src/modules/business/business.controller.ts`               | Toutes les routes Business                                    |
+| `src/modules/business/business.service.ts`                  | Logique métier (get/update business, invite, accept, members) |
+| `src/modules/business/business.module.ts`                   | Importe `MailerModule` + `AuthModule`                         |
+| `src/modules/business/types.ts`                              | `MemberListStatus`, `UnifiedMemberEntry`                      |
+| `src/modules/business/dto/update-business.dto.ts`            | Validation PATCH /me                                           |
+| `src/modules/business/dto/invite-member.dto.ts`              | `email` + `role`                                               |
+| `src/modules/business/dto/accept-invitation.dto.ts`          | `token` uniquement (flow en 2 temps)                            |
+| `src/modules/business/constants/business-messages.ts`        | i18n Business (`UPDATE_SUCCESS`, `NOT_FOUND`, `INVALID_STATUS_FILTER`) |
+| `src/modules/business/constants/invitation-messages.ts`      | i18n Invitation (7 clés)                                       |
+| `src/common/utils/invitation-token.util.ts`                  | Génération + hash SHA-256 du token d'invitation                |
+| `src/modules/mailer/mailer.service.ts`                       | + `sendInvitationEmail` / `buildInvitationTemplate`             |
+| `src/modules/auth/auth.service.ts`                           | + `issueTokensForMembership` (méthode publique)                 |
+| `src/tests/e2e/business-update-me.e2e-spec.ts`               | 4 tests                                                         |
+| `src/tests/e2e/business-invite-member.e2e-spec.ts`           | 6 tests                                                         |
+| `src/tests/e2e/business-accept-invitation.e2e-spec.ts`       | 7 tests                                                         |
+| `src/tests/e2e/business-get-members.e2e-spec.ts`              | 9 tests                                                         |
+
+## Schéma Prisma — ajouts
+
+```prisma
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  email      String
+  role       Role             @default(STAFF)
+  tokenHash  String           @unique
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  invitedById String
+  invitedBy   User     @relation(fields: [invitedById], references: [id])
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, email])
+  @@map("invitations")
+}
+
+model BusinessMember {
+  // ...
+  isActive Boolean @default(true)
+}
 ```
+
+## Architecture du flow d'invitation (décision : token, en deux temps)
+
+Trois approches ont été évaluées (attacher un compte existant / exiger un compte
+préexistant / vrai système de token) — **le système de token à usage unique** a
+été retenu pour sa sécurité et sa conformité aux standards du marché (façon
+Slack/Notion).
+
+```
+POST /business/members/invite         [JWT, OWNER/ADMIN]  (@HttpCode 200)
+  → rejette role: OWNER (409 INVITATION_OWNER_ROLE_NOT_ALLOWED)
+  → rejette si email déjà membre (409 INVITATION_ALREADY_MEMBER)
+  → invalide toute invitation PENDING existante pour cet email (→ REVOKED)
+  → génère token (32 bytes) + tokenHash (SHA-256, stocké seul en DB)
+  → crée Invitation (expiresAt = +7 jours)
+  → envoi email (template HTML, lien FRONTEND_URL/invitation/accepter?token=...)
+  → envoi email non-bloquant (try/catch + log, comme pour l'OTP register)
+
+POST /business/members/accept-invite   [JWT]  (@HttpCode 200)
+  → l'utilisateur a déjà fait /auth/register + vérifié son email (flow en 2 temps)
+  → hash le token reçu, cherche l'Invitation correspondante
+  → vérifie status (404 si inexistante, 409 si ACCEPTED/REVOKED/EXPIRED)
+  → vérifie que l'email du JWT correspond à celui de l'invitation
+    (sinon 404 générique — ne révèle jamais qu'un token existe pour un autre compte)
+  → transaction : crée BusinessMember + marque Invitation ACCEPTED
+  → régénère un accessToken + refreshToken reflétant le nouveau businessId/role
+    (via AuthService.issueTokensForMembership, réutilise generateTokens +
+    updateRefreshToken déjà existants)
+```
+
+## Décisions d'architecture & sécurité
+
+- **Token en clair envoyé par email, seul le hash SHA-256 est stocké en DB**
+  (`tokenHash`, unique) — jamais de token réversible en base
+- **Pourquoi SHA-256 et pas bcrypt ici** : le token a 32 bytes d'entropie
+  (256 bits), un bruteforce est déjà impossible ; bcrypt ralentirait sans
+  bénéfice de sécurité additionnel (bcrypt sert à ralentir le bruteforce de
+  mots de passe *faibles*, pas de tokens aléatoires)
+- **Flow d'acceptation en deux temps** (register classique existant, puis
+  `accept-invite` léger avec juste le token) plutôt qu'un temps unique — évite
+  de dupliquer la logique de création de compte + vérification email déjà
+  testée dans `AuthService`
+- **`role: OWNER` interdit à l'invitation** — un OWNER ne peut être créé que
+  via promotion explicite (`PATCH /members/:id/role`, à venir), jamais
+  directement par invitation
+- **Ré-invitation d'un email déjà en attente** : l'ancienne invitation
+  `PENDING` est automatiquement marquée `REVOKED`, une nouvelle est créée
+  (pas de blocage 409)
+- **Multi-business autorisé** : un `User` peut appartenir à plusieurs
+  `Business` (`BusinessMember` en `@@unique([userId, businessId])`, pas de
+  contrainte unique sur `userId` seul) — accepter une invitation alors qu'on
+  est déjà membre d'un autre business est un cas valide
+- **JWT régénéré après acceptation** : sans ça, l'utilisateur resterait
+  bloqué avec l'ancien `businessId`/`role` (ou aucun) jusqu'à une reconnexion
+  manuelle — le nouveau token bascule automatiquement sur le business
+  nouvellement rejoint (pas de vrai "switch business" pour l'instant)
+- **`BusinessMember.isActive`** (et non un statut sur `User`) : un membre peut
+  être désactivé *dans ce business précis* sans affecter son compte global ou
+  son appartenance à d'autres businesses. Champ en lecture seule pour
+  l'instant (pas encore d'endpoint pour le modifier)
+- **Listing unifié `GET /business/members`** : un seul tableau combinant
+  `BusinessMember` (statut `ACTIVE`/`INACTIVE` selon `isActive`) et
+  `Invitation` `PENDING` non expirées (statut `PENDING`), plutôt que deux
+  listes séparées — plus simple à afficher côté frontend
+- **Filtre `?status=` strict** : une valeur invalide renvoie une `400`
+  explicite (`BUSINESS_INVALID_STATUS_FILTER`) plutôt que d'être ignorée
+  silencieusement
+- **Recherche `?search=`** : `firstName`/`lastName`/`email` pour les membres,
+  `email` pour les invitations pending ; insensible à la casse
+  (`mode: 'insensitive'`, natif PostgreSQL) ; accents non normalisés (pas
+  d'extension `unaccent`)
+- **Tri par `createdAt` décroissant** (les plus récents en premier)
+
+## Matrice de permissions Business (validée)
+
+| Action                          | Rôles autorisés  |
+| ---------------------------------- | -------------------- |
+| Lire business / lister membres  | Tous rôles connectés |
+| Modifier business                | OWNER, ADMIN         |
+| Inviter un membre                | OWNER, ADMIN         |
+| Retirer un membre (à venir)      | OWNER, ADMIN         |
+| Changer le rôle d'un membre (à venir) | OWNER uniquement |
+
+## Incident résolu — confusion de port sur les migrations
+
+**Symptôme** : `npx prisma migrate dev` a appliqué une migration sur
+`alibia_test_db` (port 5433) au lieu de `alibia_db` (port 5432).
+
+**Cause** : `$env:DATABASE_URL` settée manuellement dans une session
+PowerShell (pour cibler la DB de test) reste active pour toute la session
+tant qu'elle n'est pas effacée — elle prend le pas sur `.env` (dotenv
+n'écrase jamais une variable déjà présente dans le process).
+
+**Correction** : `Remove-Item Env:\DATABASE_URL` puis `npx prisma migrate
+status` pour confirmer la bonne base avant toute nouvelle commande.
+
+**Règle adoptée** : toujours effacer `$env:DATABASE_URL` juste après une
+commande ciblant `.env.test`, ou utiliser une nouvelle fenêtre de terminal.
+
+## Bug ESLint résolu — `Logger` non déclaré
+
+`this.logger.error(...)` utilisé dans `inviteMember()` sans avoir importé
+`Logger` de `@nestjs/common` ni déclaré `private readonly logger = new
+Logger(BusinessService.name)` → ESLint `no-unsafe-call` /
+`no-unsafe-member-access` (type non résolu). Corrigé en ajoutant les deux.
+
+## Tests (état après cette étape)
+
+| Fichier                                     | Tests | Statut |
+| ----------------------------------------------- | ----- | ------ |
+| `business-update-me.e2e-spec.ts` (existant)  | 4     | ✅     |
+| `business-invite-member.e2e-spec.ts`         | 6     | ✅     |
+| `business-accept-invitation.e2e-spec.ts`     | 7     | ✅     |
+| `business-get-members.e2e-spec.ts`           | 9     | ✅     |
+
+**Total suite E2E complète : 17 suites, 68 tests, tous ✅**
+(40 Auth + 4 business-update-me + 6 invite + 7 accept + 9 get-members —
+préalablement vérifié à 59/59 avant l'ajout de `get-members`, la confirmation
+finale à 68/68 reste à relancer après la dernière session de travail)
+
+Unitaires inchangés : 2 suites, 22 tests ✅
+
+## Environnement
+
+- `FRONTEND_URL` ajoutée à `env.config.ts` (validation Joi, `.required()`),
+  et renseignée dans `.env` / `.env.example` / `.env.test`
+  (`http://localhost:3000` en dev)
+- Utilisée pour construire le lien d'invitation :
+  `${FRONTEND_URL}/invitation/accepter?token=...`
+
+## Liste complète des routes Business (mise à jour)
+
+**Préfixe global :** `/api/v1`
+
+### `GET /business/me` (protégé)
+
+- **Guard :** JWT
+- **Réponse 200 :** `BusinessWithDetails` (business + `members[]` + `subscription`)
+
+### `PATCH /business/me` (OWNER, ADMIN)
+
+- **HttpCode :** 200
+- **Body :** `name`, `address`, `city`, `whatsapp`, `currency`, `currencySymbol`
+  (le `slug` reste volontairement immutable)
+- **Réponse 200 :** `BusinessWithDetails`
+- **400** si propriété inattendue dans le body
+
+### `POST /business/members/invite` (OWNER, ADMIN)
+
+- **HttpCode :** 200
+- **Body :**
+
+```json
+{
+  "email": "nouveau.membre@example.com",
+  "role": "STAFF"
+}
+```
+
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Invitation envoyée avec succès.",
+  "messageKey": "INVITATION_SENT"
+}
+```
+
+- **409** `INVITATION_OWNER_ROLE_NOT_ALLOWED` / `INVITATION_ALREADY_MEMBER`
+- **403** `COMMON_FORBIDDEN_ROLE` (si appelant STAFF/LIVREUR/REVENDEUR)
+
+### `POST /business/members/accept-invite` (protégé, tous rôles)
+
+- **HttpCode :** 200
+- **Prérequis :** l'invité a déjà fait `/auth/register` + `/auth/verify-email` +
+  `/auth/login` avec l'email invité, et présente son JWT
+- **Body :**
+
+```json
+{
+  "token": "a1b2c3d4e5f6..."
+}
+```
+
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Invitation acceptée, bienvenue dans le business.",
+  "messageKey": "INVITATION_ACCEPT_SUCCESS",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+- **404** `INVITATION_NOT_FOUND` (token inexistant, ou email JWT ≠ email invitation)
+- **409** `INVITATION_EXPIRED` / `INVITATION_ALREADY_ACCEPTED` / `INVITATION_REVOKED`
+
+### `GET /business/members` (protégé, tous rôles)
+
+- **Query params optionnels :**
+  - `status` : liste séparée par virgules parmi `ACTIVE`, `INACTIVE`, `PENDING`
+    (défaut : les trois). Valeur invalide → `400 BUSINESS_INVALID_STATUS_FILTER`
+  - `search` : recherche libre sur `firstName`/`lastName`/`email` (membres) ou
+    `email` (invitations pending), insensible à la casse
+- **Exemple :** `GET /business/members?status=ACTIVE,PENDING&search=amadou`
+- **Réponse 200 :** tableau `UnifiedMemberEntry[]`, trié par `createdAt` décroissant
+
+```json
+[
+  {
+    "type": "member",
+    "status": "ACTIVE",
+    "id": "clx...",
+    "userId": "clx...",
+    "email": "amadou@example.com",
+    "firstName": "Amadou",
+    "lastName": "Diallo",
+    "role": "STAFF",
+    "createdAt": "2026-08-15T12:00:00.000Z"
+  },
+  {
+    "type": "invitation",
+    "status": "PENDING",
+    "id": "clx...",
+    "userId": null,
+    "email": "invite@example.com",
+    "firstName": null,
+    "lastName": null,
+    "role": "STAFF",
+    "createdAt": "2026-08-15T11:00:00.000Z"
+  }
+]
+```
+
+---
+
+## Reste à faire sur Business
+
+1. ~~`POST /business/members/invite`~~ ✅
+2. ~~`GET /business/members`~~ ✅
+3. `PATCH /business/members/:id/role` — changer le rôle d'un membre (**OWNER
+   uniquement**)
+4. `DELETE /business/members/:id` — retirer un membre (**OWNER, ADMIN**) —
+   doit empêcher un OWNER de se retirer lui-même s'il est le seul OWNER du
+   business (vérification explicite requise dans le service)
+
+Après Business : **module Users** (profil utilisateur + gestion CRUD des
+comptes membres côté OWNER/ADMIN — périmètre à redéfinir en détail le moment
+venu).
+
+---
+
+## État actuel de la mission « Module Business »
+
+| Point                                                    | Statut |
+| ------------------------------------------------------------ | ------ |
+| GET/PATCH `/business/me`                                 | ✅     |
+| Système de permissions par rôle (`RolesGuard`)            | ✅     |
+| Invitation par token (email + acceptation en 2 temps)      | ✅     |
+| Listing unifié membres + invitations (filtre + recherche) | ✅     |
+| Changement de rôle d'un membre                             | ⏳     |
+| Retrait d'un membre (règle dernier OWNER)                  | ⏳     |
+| Module Users                                                | ⏳     |
+| Build / Lint / Tests finaux (dernière confirmation 68/68)  | ⏳ à relancer |
