@@ -35,7 +35,7 @@ npm run start:dev
 ## Fichiers générés
 
 | Fichier                 | Rôle                            |
-| ----------------------- | -------------------------------- |
+| ----------------------- | ------------------------------- |
 | `src/main.ts`           | Point d'entrée de l'application |
 | `src/app.module.ts`     | Module racine — orchestre tout  |
 | `src/app.controller.ts` | Reçoit les requêtes HTTP        |
@@ -133,7 +133,7 @@ npm install @nestjs/throttler
 ## Fichiers créés / importants
 
 | Fichier                                       | Rôle                                                        |
-| ---------------------------------------------- | ------------------------------------------------------------ |
+| --------------------------------------------- | ----------------------------------------------------------- |
 | `src/modules/auth/auth.module.ts`             | Module Auth — JwtModule + PassportModule + Throttler        |
 | `src/modules/auth/auth.controller.ts`         | Toutes les routes Auth                                      |
 | `src/modules/auth/auth.service.ts`            | Logique métier complète                                     |
@@ -142,9 +142,9 @@ npm install @nestjs/throttler
 | `src/modules/auth/guards/jwt-auth.guard.ts`   | Guard de protection des routes                              |
 | `src/modules/auth/dto/*.ts`                   | DTOs validés (register, login, verify-otp, refresh, reset…) |
 | `src/modules/auth/constants/auth-messages.ts` | i18n FR/EN + `messageKey`                                   |
-| `src/modules/mailer/*`                        | Envoi d'emails OTP                                           |
-| `src/common/filters/all-exceptions.filter.ts` | Filtre global d'erreurs (Prisma assaini)                     |
-| `src/common/validators/password.validator.ts` | Validateur de mot de passe fort                              |
+| `src/modules/mailer/*`                        | Envoi d'emails OTP                                          |
+| `src/common/filters/all-exceptions.filter.ts` | Filtre global d'erreurs (Prisma assaini)                    |
+| `src/common/validators/password.validator.ts` | Validateur de mot de passe fort                             |
 | `src/tests/e2e/*.e2e-spec.ts`                 | 13 fichiers E2E isolés (rate-limit safe)                    |
 
 ## Architecture du flow d'authentification
@@ -227,7 +227,7 @@ model OtpCode {
 ## Tests (état final)
 
 | Type               | Suites | Tests | Statut |
-| ------------------- | ------ | ----- | ------ |
+| ------------------ | ------ | ----- | ------ |
 | Unitaires          | 2      | 22    | ✅     |
 | E2E                | 13     | 40    | ✅     |
 | `npm run lint`     | —      | —     | ✅     |
@@ -266,7 +266,7 @@ Chaque fichier E2E crée sa **propre instance d'application** pour isoler le rat
 ## Erreurs rencontrées et solutions (extraits)
 
 | Erreur                          | Cause                                  | Solution                                                    |
-| --------------------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| ------------------------------- | -------------------------------------- | ----------------------------------------------------------- |
 | Rate limiting par route inactif | Nom du throttler `global` ≠ `default`  | Renommé en `default`                                        |
 | Routes POST renvoient 201       | Pas de `@HttpCode(200)`                | Ajouté sur login, verify-\*, refresh, forgot, reset, logout |
 | `expiresIn` type incompatible   | `string` vs `StringValue` (ms)         | Cast `as StringValue`                                       |
@@ -447,7 +447,7 @@ Chaque fichier E2E crée sa **propre instance d'application** pour isoler le rat
 ### Variables d'environnement recommandées
 
 | Variable        | Valeur initiale                | Description                 |
-| ----------------- | --------------------------------- | ------------------------------ |
+| --------------- | ------------------------------ | --------------------------- |
 | `BASE_URL`      | `http://localhost:3000/api/v1` | Préfixe API                 |
 | `ACCESS_TOKEN`  | _(vide)_                       | Rempli après login / verify |
 | `REFRESH_TOKEN` | _(vide)_                       | Rempli après login / verify |
@@ -479,8 +479,8 @@ Chaque fichier E2E crée sa **propre instance d'application** pour isoler le rat
 
 ## État actuel de la mission « Sécurisation MVP »
 
-| Point                                                              | Statut                            |
-| --------------------------------------------------------------------- | ------------------------------------ |
+| Point                                                             | Statut                            |
+| ----------------------------------------------------------------- | --------------------------------- |
 | Audit initial                                                     | ✅                                |
 | Mots de passe & données sensibles                                 | ✅                                |
 | JWT (access + refresh + rotation)                                 | ✅                                |
@@ -514,24 +514,24 @@ npx prisma migrate dev --name add_business_member_is_active
 
 ## Fichiers créés / importants
 
-| Fichier                                                     | Rôle                                                          |
-| -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `src/modules/business/business.controller.ts`               | Toutes les routes Business                                    |
-| `src/modules/business/business.service.ts`                  | Logique métier (get/update business, invite, accept, members) |
-| `src/modules/business/business.module.ts`                   | Importe `MailerModule` + `AuthModule`                         |
-| `src/modules/business/types.ts`                              | `MemberListStatus`, `UnifiedMemberEntry`                      |
-| `src/modules/business/dto/update-business.dto.ts`            | Validation PATCH /me                                           |
-| `src/modules/business/dto/invite-member.dto.ts`              | `email` + `role`                                               |
-| `src/modules/business/dto/accept-invitation.dto.ts`          | `token` uniquement (flow en 2 temps)                            |
-| `src/modules/business/constants/business-messages.ts`        | i18n Business (`UPDATE_SUCCESS`, `NOT_FOUND`, `INVALID_STATUS_FILTER`) |
-| `src/modules/business/constants/invitation-messages.ts`      | i18n Invitation (7 clés)                                       |
-| `src/common/utils/invitation-token.util.ts`                  | Génération + hash SHA-256 du token d'invitation                |
-| `src/modules/mailer/mailer.service.ts`                       | + `sendInvitationEmail` / `buildInvitationTemplate`             |
-| `src/modules/auth/auth.service.ts`                           | + `issueTokensForMembership` (méthode publique)                 |
-| `src/tests/e2e/business-update-me.e2e-spec.ts`               | 4 tests                                                         |
-| `src/tests/e2e/business-invite-member.e2e-spec.ts`           | 6 tests                                                         |
-| `src/tests/e2e/business-accept-invitation.e2e-spec.ts`       | 7 tests                                                         |
-| `src/tests/e2e/business-get-members.e2e-spec.ts`              | 9 tests                                                         |
+| Fichier                                                 | Rôle                                                                   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/modules/business/business.controller.ts`           | Toutes les routes Business                                             |
+| `src/modules/business/business.service.ts`              | Logique métier (get/update business, invite, accept, members)          |
+| `src/modules/business/business.module.ts`               | Importe `MailerModule` + `AuthModule`                                  |
+| `src/modules/business/types.ts`                         | `MemberListStatus`, `UnifiedMemberEntry`                               |
+| `src/modules/business/dto/update-business.dto.ts`       | Validation PATCH /me                                                   |
+| `src/modules/business/dto/invite-member.dto.ts`         | `email` + `role`                                                       |
+| `src/modules/business/dto/accept-invitation.dto.ts`     | `token` uniquement (flow en 2 temps)                                   |
+| `src/modules/business/constants/business-messages.ts`   | i18n Business (`UPDATE_SUCCESS`, `NOT_FOUND`, `INVALID_STATUS_FILTER`) |
+| `src/modules/business/constants/invitation-messages.ts` | i18n Invitation (7 clés)                                               |
+| `src/common/utils/invitation-token.util.ts`             | Génération + hash SHA-256 du token d'invitation                        |
+| `src/modules/mailer/mailer.service.ts`                  | + `sendInvitationEmail` / `buildInvitationTemplate`                    |
+| `src/modules/auth/auth.service.ts`                      | + `issueTokensForMembership` (méthode publique)                        |
+| `src/tests/e2e/business-update-me.e2e-spec.ts`          | 4 tests                                                                |
+| `src/tests/e2e/business-invite-member.e2e-spec.ts`      | 6 tests                                                                |
+| `src/tests/e2e/business-accept-invitation.e2e-spec.ts`  | 7 tests                                                                |
+| `src/tests/e2e/business-get-members.e2e-spec.ts`        | 9 tests                                                                |
 
 ## Schéma Prisma — ajouts
 
@@ -605,7 +605,7 @@ POST /business/members/accept-invite   [JWT]  (@HttpCode 200)
 - **Pourquoi SHA-256 et pas bcrypt ici** : le token a 32 bytes d'entropie
   (256 bits), un bruteforce est déjà impossible ; bcrypt ralentirait sans
   bénéfice de sécurité additionnel (bcrypt sert à ralentir le bruteforce de
-  mots de passe *faibles*, pas de tokens aléatoires)
+  mots de passe _faibles_, pas de tokens aléatoires)
 - **Flow d'acceptation en deux temps** (register classique existant, puis
   `accept-invite` léger avec juste le token) plutôt qu'un temps unique — évite
   de dupliquer la logique de création de compte + vérification email déjà
@@ -625,7 +625,7 @@ POST /business/members/accept-invite   [JWT]  (@HttpCode 200)
   manuelle — le nouveau token bascule automatiquement sur le business
   nouvellement rejoint (pas de vrai "switch business" pour l'instant)
 - **`BusinessMember.isActive`** (et non un statut sur `User`) : un membre peut
-  être désactivé *dans ce business précis* sans affecter son compte global ou
+  être désactivé _dans ce business précis_ sans affecter son compte global ou
   son appartenance à d'autres businesses. Champ en lecture seule pour
   l'instant (pas encore d'endpoint pour le modifier)
 - **Listing unifié `GET /business/members`** : un seul tableau combinant
@@ -641,15 +641,15 @@ POST /business/members/accept-invite   [JWT]  (@HttpCode 200)
   d'extension `unaccent`)
 - **Tri par `createdAt` décroissant** (les plus récents en premier)
 
-## Matrice de permissions Business (validée)
+## Matrice de permissions Business (finale)
 
-| Action                          | Rôles autorisés  |
-| ---------------------------------- | -------------------- |
-| Lire business / lister membres  | Tous rôles connectés |
-| Modifier business                | OWNER, ADMIN         |
-| Inviter un membre                | OWNER, ADMIN         |
-| Retirer un membre (à venir)      | OWNER, ADMIN         |
-| Changer le rôle d'un membre (à venir) | OWNER uniquement |
+| Action                         | Rôles autorisés      | Restrictions supplémentaires                                                                                                        |
+| ------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Lire business / lister membres | Tous rôles connectés | —                                                                                                                                   |
+| Modifier business              | OWNER, ADMIN         | —                                                                                                                                   |
+| Inviter un membre              | OWNER, ADMIN         | Cible ne peut pas être `OWNER`                                                                                                      |
+| Changer le rôle d'un membre    | OWNER uniquement     | Ne peut pas modifier son propre rôle. Toute cible autorisée, y compris promotion en `OWNER`                                         |
+| Retirer (désactiver) un membre | OWNER, ADMIN         | Auto-retrait interdit. ADMIN ne peut pas retirer un OWNER. Le dernier OWNER actif ne peut jamais être retiré (protection défensive) |
 
 ## Incident résolu — confusion de port sur les migrations
 
@@ -674,19 +674,48 @@ commande ciblant `.env.test`, ou utiliser une nouvelle fenêtre de terminal.
 Logger(BusinessService.name)` → ESLint `no-unsafe-call` /
 `no-unsafe-member-access` (type non résolu). Corrigé en ajoutant les deux.
 
+## Décision — protection défensive inatteignable via HTTP
+
+Pour `DELETE /business/members/:id`, la règle « le dernier OWNER actif ne
+peut jamais être retiré » s'est révélée **structurellement inatteignable**
+via un flux HTTP normal une fois les autres règles appliquées (auto-retrait
+interdit, ADMIN ne peut pas viser un OWNER) : le seul appelant théorique
+capable de retirer le dernier OWNER serait ce même OWNER, déjà bloqué par
+la règle d'auto-retrait en amont.
+
+**Décision** : garder `LAST_OWNER_CANNOT_BE_REMOVED` comme **garde-fou
+défensif** dans le service (protège contre une incohérence de données
+introduite autrement — migration, correction manuelle en DB, futur bug),
+sans modifier les règles précédentes. Testée directement au niveau
+`BusinessService` (bypass de l'API) plutôt que via une requête HTTP,
+puisqu'aucun chemin HTTP légitime ne peut l'atteindre.
+
+## Incident de test — désactivations en cascade entre tests
+
+Un premier jet du test « dernier OWNER » utilisait un compte `tempOwner`
+créé/supprimé à la volée pour contourner l'blocage d'auto-retrait, laissant
+par erreur `ownerMemberId` et `secondOwnerMemberId` déjà inactifs pour les
+tests suivants du même fichier. Résultat : les tests suivants tombaient
+silencieusement dans la branche **idempotente** (`200` sans jamais exercer
+la vraie règle testée), au lieu d'échouer franchement — révélé seulement au
+moment d'écrire le test final (`rejects` reçu comme `resolved`).
+**Corrigé** en supprimant ce test intermédiaire et en le remplaçant par un
+appel direct à `BusinessService.deactivateMember()` (voir ci-dessus).
+
 ## Tests (état après cette étape)
 
 | Fichier                                     | Tests | Statut |
-| ----------------------------------------------- | ----- | ------ |
-| `business-update-me.e2e-spec.ts` (existant)  | 4     | ✅     |
-| `business-invite-member.e2e-spec.ts`         | 6     | ✅     |
-| `business-accept-invitation.e2e-spec.ts`     | 7     | ✅     |
-| `business-get-members.e2e-spec.ts`           | 9     | ✅     |
+| ------------------------------------------- | ----- | ------ |
+| `business-update-me.e2e-spec.ts` (existant) | 4     | ✅     |
+| `business-invite-member.e2e-spec.ts`        | 6     | ✅     |
+| `business-accept-invitation.e2e-spec.ts`    | 7     | ✅     |
+| `business-get-members.e2e-spec.ts`          | 9     | ✅     |
+| `business-update-member-role.e2e-spec.ts`   | 7     | ✅     |
+| `business-deactivate-member.e2e-spec.ts`    | 10    | ✅     |
 
-**Total suite E2E complète : 17 suites, 68 tests, tous ✅**
-(40 Auth + 4 business-update-me + 6 invite + 7 accept + 9 get-members —
-préalablement vérifié à 59/59 avant l'ajout de `get-members`, la confirmation
-finale à 68/68 reste à relancer après la dernière session de travail)
+**Total suite E2E complète : 19 suites, 85 tests, tous ✅**
+(40 Auth + 4 business-update-me + 6 invite + 7 accept + 9 get-members +
+7 update-role + 10 deactivate-member)
 
 Unitaires inchangés : 2 suites, 22 tests ✅
 
@@ -803,33 +832,124 @@ Unitaires inchangés : 2 suites, 22 tests ✅
 ]
 ```
 
+### `PATCH /business/members/:id/role` (OWNER uniquement)
+
+- **HttpCode :** 200
+- **`:id`** = `BusinessMember.id` (jamais un `userId` ni un id d'invitation)
+- **Body :**
+
+```json
+{
+  "role": "ADMIN"
+}
+```
+
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Rôle du membre mis à jour avec succès.",
+  "messageKey": "BUSINESS_ROLE_UPDATE_SUCCESS"
+}
+```
+
+- **403** `COMMON_FORBIDDEN_ROLE` (appelant non-OWNER)
+- **404** `BUSINESS_MEMBER_NOT_FOUND` (id inexistant, ou membre d'un autre business)
+- **409** `BUSINESS_CANNOT_MODIFY_OWN_ROLE` (un OWNER ne peut jamais modifier son propre rôle via cette route)
+- Toute valeur de rôle cible est acceptée, **y compris `OWNER`** (promotion libre par un OWNER)
+
+### `DELETE /business/members/:id` (OWNER, ADMIN)
+
+- **HttpCode :** 200 — désactivation (`isActive = false`), **jamais de suppression physique** (conserve l'historique, réactivable plus tard)
+- **`:id`** = `BusinessMember.id`
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Membre désactivé avec succès.",
+  "messageKey": "BUSINESS_MEMBER_DEACTIVATED_SUCCESS"
+}
+```
+
+- **403** `COMMON_FORBIDDEN_ROLE` (appelant STAFF/LIVREUR/REVENDEUR)
+- **404** `BUSINESS_MEMBER_NOT_FOUND` (id inexistant, ou membre d'un autre business)
+- **409** `BUSINESS_CANNOT_REMOVE_SELF` (auto-retrait interdit sur cette route — prévoir `POST /business/leave` plus tard pour le départ volontaire)
+- **409** `BUSINESS_ADMIN_CANNOT_REMOVE_OWNER` (un ADMIN ne peut retirer que des rôles inférieurs à OWNER)
+- **409** `BUSINESS_LAST_OWNER_CANNOT_BE_REMOVED` (protection défensive, inatteignable en usage normal — voir section Incidents)
+- **Idempotent** : désactiver un membre déjà inactif renvoie `200` sans erreur
+
 ---
+
+## Décision — scope minimum du module Business pour le MVP
+
+Analyse effectuée avant de passer au module suivant : les 6 endpoints Business
+existants (`GET/PATCH /me`, `invite`, `accept-invite`, `GET /members`,
+`PATCH .../role`, `DELETE .../:id`) sont jugés **suffisants pour un MVP** —
+ils couvrent le cycle de vie complet d'une équipe (créer, inviter, consulter,
+promouvoir, retirer). Décision : **ne rien retirer** (déjà codé et testé,
+coût de maintenance négligeable), et reporter à une v2 réelle (déclenchée par
+un besoin utilisateur constaté, pas anticipé) :
+
+- Gestion de la `Subscription` (changement de plan, facturation)
+- Upload du logo business (`Business.logo`)
+- Vrai "switch business" pour un utilisateur multi-tenant
+- `POST /business/leave` (départ volontaire d'un membre)
+- Historique/journalisation des actions d'équipe
 
 ## Reste à faire sur Business
 
 1. ~~`POST /business/members/invite`~~ ✅
 2. ~~`GET /business/members`~~ ✅
-3. `PATCH /business/members/:id/role` — changer le rôle d'un membre (**OWNER
-   uniquement**)
-4. `DELETE /business/members/:id` — retirer un membre (**OWNER, ADMIN**) —
-   doit empêcher un OWNER de se retirer lui-même s'il est le seul OWNER du
-   business (vérification explicite requise dans le service)
+3. ~~`PATCH /business/members/:id/role`~~ ✅
+4. ~~`DELETE /business/members/:id`~~ ✅
 
-Après Business : **module Users** (profil utilisateur + gestion CRUD des
-comptes membres côté OWNER/ADMIN — périmètre à redéfinir en détail le moment
-venu).
-
----
+**Module Business considéré comme terminé pour le MVP.**
 
 ## État actuel de la mission « Module Business »
 
-| Point                                                    | Statut |
-| ------------------------------------------------------------ | ------ |
-| GET/PATCH `/business/me`                                 | ✅     |
-| Système de permissions par rôle (`RolesGuard`)            | ✅     |
-| Invitation par token (email + acceptation en 2 temps)      | ✅     |
-| Listing unifié membres + invitations (filtre + recherche) | ✅     |
-| Changement de rôle d'un membre                             | ⏳     |
-| Retrait d'un membre (règle dernier OWNER)                  | ⏳     |
-| Module Users                                                | ⏳     |
-| Build / Lint / Tests finaux (dernière confirmation 68/68)  | ⏳ à relancer |
+| Point                                                     | Statut        |
+| --------------------------------------------------------- | ------------- |
+| GET/PATCH `/business/me`                                  | ✅            |
+| Système de permissions par rôle (`RolesGuard`)            | ✅            |
+| Invitation par token (email + acceptation en 2 temps)     | ✅            |
+| Listing unifié membres + invitations (filtre + recherche) | ✅            |
+| Changement de rôle d'un membre                            | ✅            |
+| Retrait (désactivation) d'un membre (règle dernier OWNER) | ✅            |
+| Build / Lint / Tests finaux (85/85 confirmé)              | ✅            |
+| Module Users                                              | ⏳ à démarrer |
+
+---
+
+# Étape 09 — Module Users (à venir)
+
+## Objectif
+
+Couvrir la gestion du propre compte utilisateur, en complément de ce qui
+existe déjà dans Auth (`GET /auth/me`, `POST /auth/toggle-2fa`,
+`POST /auth/logout`).
+
+## Décision — scope minimum MVP
+
+Analyse du minimum réellement nécessaire, en excluant tout ce qui est déjà
+couvert ailleurs ou qui peut attendre une v2 :
+
+| Endpoint prévu             | Statut  | Justification                                                                                                                             |
+| -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `PATCH /users/me`          | À coder | Modifier `firstName`/`lastName`/`phone` — action basique attendue dès le lancement                                                        |
+| `PATCH /users/me/password` | À coder | Changer son mot de passe en étant connecté (avec l'ancien en confirmation), distinct du flow `forgot/reset` qui suppose une perte d'accès |
+
+**Explicitement reporté** (pas de besoin utilisateur constaté à date) :
+
+- `GET /users/me` — déjà couvert par `GET /auth/me`, pas de duplication
+- Upload d'avatar — nécessite une vraie infra de stockage (S3/Cloudinary),
+  le champ `avatar` existe déjà en DB mais reste inutilisé pour l'instant
+- Désactivation/suppression de son propre compte — cas rare, et risqué à
+  bâcler (cascade si l'utilisateur est l'unique OWNER d'un business)
+- CRUD admin sur les comptes d'autres utilisateurs — déjà couvert côté
+  business par `PATCH .../role` et `DELETE .../:id` ; un vrai module
+  d'administration globale n'a de sens que face à un besoin d'admin
+  plateforme, hors contexte multi-tenant
+
+## Statut
+
+⏳ Pas encore commencé — prochaine étape de développement.
