@@ -920,7 +920,7 @@ un besoin utilisateur constaté, pas anticipé) :
 
 ---
 
-# Étape 09 — Module Users (à venir)
+# Étape 09 — Module Users (MVP)
 
 ## Objectif
 
@@ -930,26 +930,167 @@ existe déjà dans Auth (`GET /auth/me`, `POST /auth/toggle-2fa`,
 
 ## Décision — scope minimum MVP
 
-Analyse du minimum réellement nécessaire, en excluant tout ce qui est déjà
-couvert ailleurs ou qui peut attendre une v2 :
-
-| Endpoint prévu             | Statut  | Justification                                                                                                                             |
-| -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `PATCH /users/me`          | À coder | Modifier `firstName`/`lastName`/`phone` — action basique attendue dès le lancement                                                        |
-| `PATCH /users/me/password` | À coder | Changer son mot de passe en étant connecté (avec l'ancien en confirmation), distinct du flow `forgot/reset` qui suppose une perte d'accès |
+| Endpoint                   | Statut | Justification                                                                                                                             |
+| -------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `PATCH /users/me`          | ✅     | Modifier `firstName`/`lastName`/`phone` — action basique attendue dès le lancement                                                        |
+| `PATCH /users/me/password` | ✅     | Changer son mot de passe en étant connecté (avec l'ancien en confirmation), distinct du flow `forgot/reset` qui suppose une perte d'accès |
 
 **Explicitement reporté** (pas de besoin utilisateur constaté à date) :
 
 - `GET /users/me` — déjà couvert par `GET /auth/me`, pas de duplication
 - Upload d'avatar — nécessite une vraie infra de stockage (S3/Cloudinary),
   le champ `avatar` existe déjà en DB mais reste inutilisé pour l'instant
+- Changement d'**email** — volontairement **immutable pour le MVP**
+  (nécessiterait sa propre vérification OTP, comme à l'inscription) → v2
 - Désactivation/suppression de son propre compte — cas rare, et risqué à
   bâcler (cascade si l'utilisateur est l'unique OWNER d'un business)
 - CRUD admin sur les comptes d'autres utilisateurs — déjà couvert côté
-  business par `PATCH .../role` et `DELETE .../:id` ; un vrai module
-  d'administration globale n'a de sens que face à un besoin d'admin
-  plateforme, hors contexte multi-tenant
+  business par `PATCH .../role` et `DELETE .../:id`
+
+## Fichiers créés / importants
+
+| Fichier                                           | Rôle                                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/modules/users/users.module.ts`               | Importe `AuthModule` (délégation de `changePassword`)                                     |
+| `src/modules/users/users.controller.ts`           | `PATCH /me`, `PATCH /me/password`                                                         |
+| `src/modules/users/users.service.ts`              | `updateMe()` (logique propre) + `changePassword()` (délègue à `AuthService`)              |
+| `src/modules/users/dto/update-user.dto.ts`        | `firstName?`, `lastName?`, `phone?` — tous optionnels                                     |
+| `src/modules/users/constants/user-messages.ts`    | i18n Users (`UPDATE_SUCCESS`, `PHONE_ALREADY_USED`, `NO_FIELDS_TO_UPDATE`, `NOT_FOUND`)   |
+| `src/modules/auth/dto/change-password.dto.ts`     | `currentPassword`, `newPassword` (`@IsStrongPassword()`)                                  |
+| `src/modules/auth/auth.service.ts`                | + `changePassword()` (logique réelle : vérif password, hash, invalidation `refreshToken`) |
+| `src/modules/auth/constants/auth-messages.ts`     | + `PASSWORD_CHANGE_SUCCESS`                                                               |
+| `src/tests/e2e/users-update-me.e2e-spec.ts`       | 6 tests                                                                                   |
+| `src/tests/e2e/users-change-password.e2e-spec.ts` | 4 tests                                                                                   |
+
+## Architecture
+
+```
+PATCH /users/me                 [JWT]
+  → rejette body vide (400 USER_NO_FIELDS_TO_UPDATE)
+  → vérifie unicité du phone si fourni (409 USER_PHONE_ALREADY_USED)
+  → met à jour firstName/lastName/phone (email non modifiable)
+
+PATCH /users/me/password        [JWT]
+  → UsersController → UsersService.changePassword() → délègue à
+    AuthService.changePassword() (logique réelle)
+  → vérifie currentPassword (401 AUTH_INVALID_PASSWORD si incorrect)
+  → hash newPassword (bcrypt cost 12, cohérent avec register/reset)
+  → invalide refreshToken (= null) → force une reconnexion
+  → 200 AUTH_PASSWORD_CHANGE_SUCCESS
+```
+
+## Décisions d'architecture
+
+- **Email immutable pour le MVP** — cohérent avec le `slug` du Business,
+  changement d'email reporté en v2 (nécessiterait sa propre vérification OTP)
+- **Body vide rejeté en `400`** (`BadRequestException`), pas en `409` —
+  écart corrigé en cours de route (`ConflictException` utilisé par réflexe
+  au départ, corrigé après relecture de la décision initiale)
+- **Vérification d'unicité du `phone`** faite manuellement dans le service
+  (`findUnique` puis comparaison d'id) plutôt que de laisser Prisma lever une
+  erreur de contrainte `@unique` brute — permet un message i18n propre au
+  lieu d'une 500 générique
+- **Logique de changement de mot de passe centralisée dans `AuthService`**,
+  pas dupliquée dans `UsersService` — `UsersService.changePassword()` se
+  contente de déléguer (`return this.authService.changePassword(...)`),
+  cohérent avec le pattern déjà utilisé pour
+  `BusinessService.acceptInvitation()` → `AuthService.issueTokensForMembership()`
+- **`UsersModule` importe `AuthModule`** pour permettre l'injection
+  d'`AuthService` dans `UsersService`
+- **Changement de mot de passe invalide le `refreshToken`** (comme
+  `resetPassword()`), forçant une reconnexion — traite un changement
+  volontaire de mot de passe comme un signal de sécurité, cohérent avec le
+  reste du projet
+
+## Incident résolu — dépendance manquante non détectée par `tsc`/`lint`
+
+**Symptôme** : `Nest can't resolve dependencies of the UsersService
+(PrismaService, ?). Please make sure that the argument AuthService at index
+[1] is available in the UsersModule module` — uniquement au lancement des
+tests E2E, alors que `tsc --noEmit` et `npm run lint` étaient restés
+silencieux à chaque étape précédente.
+
+**Cause** : l'injection de dépendances de NestJS est résolue **à
+l'exécution** (runtime), pas à la compilation TypeScript. Le constructeur de
+`UsersService` déclarait bien `private readonly authService: AuthService`
+(donc valide aux yeux de `tsc`), mais `UsersModule` n'avait jamais reçu
+`imports: [AuthModule]` — l'erreur ne pouvait donc se révéler qu'au moment
+où Nest instancie réellement le graphe de dépendances, ce qui n'arrive qu'au
+démarrage de l'app (donc dans les tests E2E, jamais dans `tsc`/`lint`/tests
+unitaires isolés).
+
+**Leçon retenue** : une modification de module (`imports: [...]`) doit être
+vérifiée par un vrai démarrage d'application (E2E) en plus de la
+compilation — `tsc --noEmit` seul ne suffit pas à garantir qu'un module
+Nest est correctement câblé.
+
+## Tests (état après cette étape)
+
+| Fichier                             | Tests | Statut |
+| ----------------------------------- | ----- | ------ |
+| `users-update-me.e2e-spec.ts`       | 6     | ✅     |
+| `users-change-password.e2e-spec.ts` | 4     | ✅     |
+
+**Total suite E2E complète : 22 suites, 95 tests, tous ✅**
+(85 après le module Business + 6 update-me + 4 change-password)
+
+Unitaires inchangés : 2 suites, 22 tests ✅
+
+## Liste complète des routes Users
+
+**Préfixe global :** `/api/v1`
+
+### `PATCH /users/me` (protégé)
+
+- **Guard :** JWT
+- **Body (tous champs optionnels, au moins un requis) :**
+
+```json
+{
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "phone": "+237612345678"
+}
+```
+
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Profil mis à jour avec succès.",
+  "messageKey": "USER_UPDATE_SUCCESS"
+}
+```
+
+- **400** `USER_NO_FIELDS_TO_UPDATE` (body vide)
+- **409** `USER_PHONE_ALREADY_USED` (phone déjà pris par un autre compte)
+
+### `PATCH /users/me/password` (protégé)
+
+- **Guard :** JWT
+- **Body :**
+
+```json
+{
+  "currentPassword": "AncienPassword123!",
+  "newPassword": "NouveauPassword456!"
+}
+```
+
+- **Réponse 200 :**
+
+```json
+{
+  "message": "Mot de passe modifié avec succès.",
+  "messageKey": "AUTH_PASSWORD_CHANGE_SUCCESS"
+}
+```
+
+- **400** validation `@IsStrongPassword()` sur `newPassword`
+- **401** `AUTH_INVALID_PASSWORD` (currentPassword incorrect)
+- **Effet de bord** : invalide le `refreshToken` en DB → force une reconnexion
 
 ## Statut
 
-⏳ Pas encore commencé — prochaine étape de développement.
+**Module Users MVP terminé.** Prochaine étape : module **Inventaire**
+(première feature métier au-dessus des fondations Auth/Business/Users).
