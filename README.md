@@ -670,22 +670,17 @@ Finance reste dédié à l'argent réellement encaissé (`Payment`/`Cash`).
 
 ## Tests
 
-`invoices.e2e-spec.ts` écrit (20 scénarios prévus : création par rôle,
-refus LIVREUR, vente inexistante/cross-business, visibilité REVENDEUR,
-numérotation séquentielle et compteurs indépendants par business, lecture
-liste/détail, isolation cross-business).
-
-**⚠️ Statut d'exécution non confirmé dans cette session de travail** — le
-fichier a été écrit et `tsc --noEmit` validé, mais le run final
-(`npx jest --config src/tests/jest-e2e.json --runInBand invoices.e2e-spec`)
-n'a pas encore été exécuté/rapporté au moment de la rédaction de cette
-documentation. À confirmer avant de considérer la Phase 2C comme close.
+`invoices.e2e-spec.ts` — **18/18 ✅** (création par rôle OWNER/STAFF/
+REVENDEUR, refus LIVREUR, vente inexistante/cross-business, refus
+REVENDEUR sans lien avec la vente — 404 et non 403 —, format
+`INV-YYYY-00001`, refus de double facturation d'une même vente — 409 —,
+numérotation séquentielle entre ventes d'un même business, compteur
+indépendant par business, lecture liste avec visibilité REVENDEUR
+filtrée, lecture détail, isolation cross-business).
 
 ## Reste à faire sur Invoice
 
-- Confirmer le run complet des 20 tests E2E
 - Génération PDF (explicitement reportée, hors périmètre Phase 2C)
-- Commit final une fois les tests confirmés verts
 
 ---
 
@@ -699,6 +694,6 @@ documentation. À confirmer avant de considérer la Phase 2C comme close.
 | `POST /auth/switch-business` | ✅ terminé et testé (5/5) |
 | Inventory — Produits/Localisations/Stock (Phase 1) | ✅ terminé (178/178 avant cette session) |
 | Sales — Pricing + Ventes (Phase 2A/2B) | ✅ terminé |
-| Invoice (Phase 2C) | ⏳ implémenté, tests écrits, run final à confirmer |
+| Invoice (Phase 2C) | ✅ terminé et testé (18/18) |
 | Finance — Payment + Cash (Phase 3A) | ✅ terminé et testé (27/27) |
 | Finance — Expense / Settlement (Phase 3B) | ⏳ non commencé (explicitement mis en attente) |
